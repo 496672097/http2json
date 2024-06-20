@@ -5,6 +5,7 @@ import (
 	"reflect"
 )
 
+// DebugPrint 打印结构体字段值
 func (h *Http2Json) DebugPrint() {
 	v := reflect.ValueOf(*h)
 	t := reflect.TypeOf(*h)
