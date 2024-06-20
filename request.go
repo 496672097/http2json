@@ -3,6 +3,7 @@ package http2json
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 )
@@ -19,11 +20,11 @@ type Http2Json struct {
 	Body    any
 	proxy   string
 	client  *http.Client
-	Debug   bool
 }
 
 // 设置默认值
-func (h *Http2Json) setDefaultInfo() {
+// 如果没有设置Method,Headers,client则设置默认值
+func (h *Http2Json) setDefaultInfo(opts []Option) {
 	if h.Method == "" {
 		h.Method = "GET"
 	}
@@ -35,6 +36,12 @@ func (h *Http2Json) setDefaultInfo() {
 	if h.client == nil {
 		h.client = &http.Client{}
 	}
+	//处理opts
+	if len(opts) > 0 {
+		for _, opt := range opts {
+			opt(h)
+		}
+	}
 }
 
 // httpRequest creates an HTTP request and returns the response headers, body, and any error encountered.
@@ -45,8 +52,7 @@ func (h *Http2Json) setDefaultInfo() {
 // @return respBody: The response body
 // @return err: Any error encountered
 func (h *Http2Json) HttpRequest(opts ...Option) (respHeaders map[string]string, respBody []byte, err error) {
-	h.setDefaultInfo() // 设置默认值
-
+	h.setDefaultInfo(opts) // 设置默认值
 	// Convert the body data to JSON
 	var body io.Reader
 	if h.Body != nil {
@@ -72,7 +78,11 @@ func (h *Http2Json) HttpRequest(opts ...Option) (respHeaders map[string]string, 
 		return nil, nil, err
 	}
 	defer resp.Body.Close()
-
+	//获取状态码
+	statusCode := resp.StatusCode
+	if statusCode != http.StatusOK {
+		return nil, nil, fmt.Errorf("请求失败,状态码为:%d", statusCode)
+	}
 	// Read the response body
 	respBody, err = io.ReadAll(resp.Body)
 	if err != nil {
