@@ -17,8 +17,9 @@ type Http2Json struct {
 	Url     string
 	Headers map[string]string
 	Body    any
-	Proxy   string
-	Client  *http.Client
+	proxy   string
+	client  *http.Client
+	Debug   bool
 }
 
 // 设置默认值
@@ -31,8 +32,8 @@ func (h *Http2Json) setDefaultInfo() {
 		h.Headers["Content-Type"] = "application/json"
 		h.Headers["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0"
 	}
-	if h.Client == nil {
-		h.Client = &http.Client{}
+	if h.client == nil {
+		h.client = &http.Client{}
 	}
 }
 
@@ -66,7 +67,7 @@ func (h *Http2Json) HttpRequest(opts ...Option) (respHeaders map[string]string, 
 	}
 	// Perform the HTTP request
 
-	resp, err := h.Client.Do(req)
+	resp, err := h.client.Do(req)
 	if err != nil {
 		return nil, nil, false, err
 	}
