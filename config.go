@@ -2,6 +2,9 @@ package http2json
 
 import "net/http"
 
+// Option 选项
+// 作者：limanman233
+
 type Option func(*Http2Json)
 
 // WithProxy 设置代理
