@@ -44,22 +44,22 @@ func (h *Http2Json) setDefaultInfo() {
 // @return respHeaders: The response headers
 // @return respBody: The response body
 // @return err: Any error encountered
-func (h *Http2Json) HttpRequest(opts ...Option) (respHeaders map[string]string, respBody []byte, issucces bool, err error) {
+func (h *Http2Json) HttpRequest(opts ...Option) (respHeaders map[string]string, respBody []byte, err error) {
 	h.setDefaultInfo() // 设置默认值
-	issucces = false
+
 	// Convert the body data to JSON
 	var body io.Reader
 	if h.Body != nil {
 		jsonData, err := json.Marshal(h.Body)
 		if err != nil {
-			return nil, nil, false, err
+			return nil, nil, err
 		}
 		body = bytes.NewBuffer(jsonData)
 	}
 	// Create the HTTP request
 	req, err := http.NewRequest(h.Method, h.Url, body)
 	if err != nil {
-		return nil, nil, false, err
+		return nil, nil, err
 	}
 	// Set the request headers
 	for key, value := range h.Headers {
@@ -69,19 +69,14 @@ func (h *Http2Json) HttpRequest(opts ...Option) (respHeaders map[string]string, 
 
 	resp, err := h.client.Do(req)
 	if err != nil {
-		return nil, nil, false, err
+		return nil, nil, err
 	}
 	defer resp.Body.Close()
-
-	//获取状态码
-	if resp.StatusCode == 200 {
-		issucces = true
-	}
 
 	// Read the response body
 	respBody, err = io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, nil, false, err
+		return nil, nil, err
 	}
 
 	// Convert the response headers to map[string]string
@@ -89,7 +84,6 @@ func (h *Http2Json) HttpRequest(opts ...Option) (respHeaders map[string]string, 
 	for key, values := range resp.Header {
 		respHeaders[key] = values[0]
 	}
-
 	// Return the headers, body, and no error
-	return respHeaders, respBody, issucces, nil
+	return respHeaders, respBody, err
 }
