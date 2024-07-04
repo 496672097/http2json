@@ -2,10 +2,12 @@ package http2json
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 )
 
 //作者：limanman233
@@ -20,6 +22,7 @@ type Http2Json struct {
 	Body    any
 	proxy   string
 	client  *http.Client
+	Errors  []error //错误信息
 }
 
 // 设置默认值
@@ -40,6 +43,20 @@ func (h *Http2Json) setDefaultInfo(opts []Option) {
 	if len(opts) > 0 {
 		for _, opt := range opts {
 			opt(h)
+		}
+	}
+	if h.proxy != "" {
+		proxyurl, err := url.Parse(h.proxy)
+		if err != nil {
+			h.Errors = append(h.Errors, err)
+			return
+		}
+		// 设置代理并忽略证书安全问题
+		h.client.Transport = &http.Transport{
+			Proxy: http.ProxyURL(proxyurl),
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
 		}
 	}
 }
