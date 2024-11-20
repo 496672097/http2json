@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 )
 
 //作者：limanman233
@@ -69,8 +70,9 @@ func (h *Http2Json) setDefaultInfo(opts []Option) {
 // @return respBody: The response body
 // @return err: Any error encountered
 func (h *Http2Json) HttpRequest(opts ...Option) (respHeaders map[string]string, respBody []byte, err error) {
-	h.setDefaultInfo(opts) // 设置默认值
-	// Convert the body data to JSON
+	h.setDefaultInfo() // 设置默认值
+
+	// 将 Body 数据转换为 JSON
 	var body io.Reader
 	if h.Body != nil {
 		jsonData, err := json.Marshal(h.Body)
@@ -79,38 +81,46 @@ func (h *Http2Json) HttpRequest(opts ...Option) (respHeaders map[string]string, 
 		}
 		body = bytes.NewBuffer(jsonData)
 	}
-	// Create the HTTP request
+
+	// 创建 HTTP 请求
 	req, err := http.NewRequest(h.Method, h.Url, body)
 	if err != nil {
 		return nil, nil, err
 	}
-	// Set the request headers
+
+	// 设置请求头
 	for key, value := range h.Headers {
 		req.Header.Set(key, value)
 	}
-	// Perform the HTTP request
 
+	// 执行 HTTP 请求
 	resp, err := h.client.Do(req)
 	if err != nil {
 		return nil, nil, err
 	}
 	defer resp.Body.Close()
-	//获取状态码
-	statusCode := resp.StatusCode
-	if statusCode != http.StatusOK {
-		return nil, nil, fmt.Errorf("请求失败,状态码为:%d", statusCode)
-	}
-	// Read the response body
+
+	// 读取响应体
 	respBody, err = io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, nil, err
+		// 返回已读取的部分数据和错误
+		return nil, respBody, err
 	}
 
-	// Convert the response headers to map[string]string
+	// 验证是否完整读取响应体
+	if contentLengthStr := resp.Header.Get("Content-Length"); contentLengthStr != "" {
+		contentLength, err := strconv.ParseInt(contentLengthStr, 10, 64)
+		if err == nil && int64(len(respBody)) != contentLength {
+			return nil, respBody, fmt.Errorf("响应体读取不完整：期望 %d 字节，实际读取 %d 字节", contentLength, len(respBody))
+		}
+	}
+
+	// 将响应头转换为 map[string]string
 	respHeaders = make(map[string]string)
 	for key, values := range resp.Header {
 		respHeaders[key] = values[0]
 	}
-	// Return the headers, body, and no error
-	return respHeaders, respBody, err
+
+	// 返回响应头、响应体和错误信息
+	return respHeaders, respBody, nil
 }
